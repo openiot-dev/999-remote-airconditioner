@@ -1,0 +1,13 @@
+{
+  "_안내": "name 과 url 을 채우고 main 에 push 하면 사내 툴 콘솔에 등록됩니다. 이후 push 할 때마다 이 파일 내용으로 갱신됩니다. 항목 설명은 dev/backend/README.md 의 '툴 콘솔 등록' 을 보세요.",
+  "name": "",
+  "slug": "",
+  "description": "",
+  "category": "",
+  "tags": [],
+  "url": "",
+  "adminUrl": "",
+  "iconUrl": "",
+  "owner": "",
+  "ownerEmail": ""
+}

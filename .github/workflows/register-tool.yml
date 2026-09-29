@@ -1,0 +1,32 @@
+# 사내 툴 콘솔(openiot-devteam/000-tools-console)에 이 툴을 등록하고, main 에 push 할 때마다 정보를 갱신한다.
+#
+# 키나 시크릿을 넣을 필요가 없다. GitHub 이 이 실행에 발급하는 증명서로 콘솔이
+# "openiot-devteam 조직의 어느 저장소, main 브랜치"인지 확인한다.
+# 루트의 tools-console.json 에 name 과 url 을 채우기 전까지는 안내만 남기고 지나간다.
+name: 툴 콘솔 등록
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read # 저장소 내려받기
+  id-token: write # 증명서 발급. 이 권한으로는 저장소에 아무것도 쓸 수 없다
+
+jobs:
+  register:
+    # 템플릿 저장소 자신은 툴이 아니므로 건너뛴다.
+    if: github.repository != 'openiot-devteam/000-tools-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      # Node 는 따로 설치하지 않는다. 러너에 기본으로 깔린 Node 로 돈다(스크립트는 18 이상이면 되고 설치할 패키지가 없다).
+      - name: 콘솔에 등록
+        env:
+          # 비워 두면 스크립트의 기본 주소를 쓴다. 주소가 바뀌면 조직 변수 하나만 고친다.
+          TOOLS_CONSOLE_API: ${{ vars.TOOLS_CONSOLE_API }}
+        # --soft-fail: 콘솔이 잠시 멈춰 있어도 이 워크플로를 실패로 만들지 않고 경고만 남긴다.
+        run: node scripts/register-tool.mjs --soft-fail

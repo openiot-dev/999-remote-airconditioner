@@ -1,0 +1,19 @@
+# Terraform — 로컬 작업 산출물
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan*
+crash.log
+
+# 시크릿·환경별 설정 (예시 파일만 커밋한다)
+terraform.tfvars
+backend.hcl
+
+# provider 잠금 파일(.terraform.lock.hcl)은 **커밋한다** —
+# 팀원과 CI 가 같은 provider 버전을 쓰게 하려면 필요하다.
+
+# Lambda 빌드 산출물
+node_modules/
+dist/
+*.zip

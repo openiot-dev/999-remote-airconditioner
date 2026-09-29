@@ -1,0 +1,23 @@
+# cp terraform.tfvars.example terraform.tfvars 후 값을 채운다.
+# terraform.tfvars 는 .gitignore 에 있다 — 시크릿을 커밋하지 않기 위해서다.
+
+# 새 툴을 시작하면 가장 먼저 바꿀 값. 모든 리소스 이름의 접두사다.
+project = "tooltpl"
+env     = "dev"
+
+# Amplify 배포 후 실제 도메인으로 바꾸고 다시 apply 한다.
+# (Cognito callback 목록과 CORS 허용 출처가 이 값으로 만들어진다)
+user_app_base_url  = "http://localhost:3000"
+admin_app_base_url = "http://localhost:3001"
+
+# 외부 연동 키. 콘솔에서 직접 넣을 거면 자리표시자로 두어도 된다.
+# app_secret = "xoxb-..."
+
+# 알람 수신 이메일. 비우면 SNS 토픽만 만들어진다.
+# alert_email = "dev-alerts@openiot.app"
+
+# 배치가 필요 없는 툴이면 끈다.
+# enable_daily_task = false
+
+# dev 비용 절감(시점 복구 끄기)
+# enable_point_in_time_recovery = false

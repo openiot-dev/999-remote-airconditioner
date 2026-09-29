@@ -1,0 +1,16 @@
+# cp backend.hcl.example backend.hcl 후 bucket 과 key 를 채운다.
+#
+# bucket 은 bootstrap 의 출력값을 그대로 쓴다. 손으로 짓지 않는다.
+#   cd bootstrap && terraform output -raw state_bucket
+# (예전 판으로 bootstrap 을 돌린 계정은 이름에 툴 이름이 들어가 있다.
+#  openiot-<project>-tfstate-<account-id> 형태여도 고치지 말고 그대로 쓴다.)
+#
+# key 의 <project> 는 반드시 이 툴의 이름으로 바꾼다. 상태 버킷은 계정에 하나만 두고
+# 모든 툴이 나눠 쓰므로, 두 툴이 같은 key 를 쓰면 나중 툴이 먼저 툴의 상태 파일을 덮어쓴다.
+# 그 뒤로 Terraform 은 먼저 툴의 자원을 모르는 상태가 되고, apply 하면 그 자원들을 지우려 든다.
+# 되돌리려면 자원을 하나씩 다시 들여와야 한다.
+bucket       = "openiot-tfstate-<account-id>"
+key          = "backend/<project>/dev/terraform.tfstate"
+region       = "ap-northeast-2"
+use_lockfile = true
+encrypt      = true

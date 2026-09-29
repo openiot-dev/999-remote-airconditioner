@@ -1,0 +1,29 @@
+# 의존성 / 빌드 결과물 (각 앱 폴더의 .gitignore 에도 있지만, 루트에서 한 번 더 막습니다)
+node_modules/
+.next/
+out/
+build/
+
+# npm 내려받기 캐시. amplify.yml 의 빌드가 `npm ci --cache .npm` 으로 여기에 쌓습니다.
+# 배포 전에 같은 명령을 손으로 돌려보면 그대로 커밋에 딸려 들어갑니다.
+# (한 번 올라가면 지우는 데 기록을 다시 쓰고 강제로 올려야 합니다)
+.npm/
+
+# 환경변수. .env.example 만 올립니다.
+.env
+.env.*
+!.env.example
+
+# 로그
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 편집기 / 운영체제
+.DS_Store
+.idea/
+*.swp
+
+# 타입스크립트 증분 빌드 기록
+*.tsbuildinfo
