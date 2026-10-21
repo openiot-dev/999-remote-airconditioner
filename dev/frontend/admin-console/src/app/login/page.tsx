@@ -1,6 +1,8 @@
 import { ALLOWED_EMAIL_DOMAIN } from '@/lib/auth/config'
 import { safeNext } from '@/lib/auth/request'
 
+import { LoginButton } from './login-button'
+
 export const dynamic = 'force-dynamic'
 
 type SearchParams = Promise<{ error?: string; email?: string; next?: string }>
@@ -47,13 +49,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           </p>
         )}
 
-        <a
+        {/* 노션 틀 안에서는 팝업으로 엽니다. 이유는 login-button.tsx 에 있습니다. */}
+        <LoginButton
           href={loginHref}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          next={safeNext(next)}
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
           <OpenIoTMark />
           OpenIoT 계정으로 로그인
-        </a>
+        </LoginButton>
       </div>
     </main>
   )

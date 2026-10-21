@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { REFRESH_COOKIE, SESSION_COOKIE, readAuthConfig } from '@/lib/auth/config'
-import { originOf } from '@/lib/auth/request'
+import { isCrossSiteWrite, originOf } from '@/lib/auth/request'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -20,6 +20,8 @@ export const dynamic = 'force-dynamic'
  * (admin/page.tsx).
  */
 export async function POST(request: Request) {
+  // 쿠키가 SameSite=None 이라 다른 사이트의 폼도 여기를 부를 수 있습니다. 그런 요청은 버립니다.
+  if (isCrossSiteWrite(request)) return new NextResponse(null, { status: 403 })
   return logout(request)
 }
 
@@ -39,12 +41,13 @@ function logout(request: Request) {
   const response = NextResponse.redirect(target, 303)
 
   // 둘 다 지웁니다. 세션만 지우면 갱신 토큰이 남아 API 를 계속 부를 수 있습니다.
+  // 구울 때와 같이 SameSite=None 입니다. 노션 틀 안에서는 lax 로 지우라는 응답을 브라우저가 무시합니다.
   for (const name of [SESSION_COOKIE, REFRESH_COOKIE]) {
     response.cookies.set(name, '', {
       path: '/',
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'none',
       maxAge: 0,
     })
   }

@@ -27,6 +27,20 @@ export function redirectUriOf(headers: Headers): string {
   return `${originOf(headers)}/api/auth/callback`
 }
 
+/**
+ * 다른 사이트가 보낸 쓰기 요청인지 봅니다.
+ *
+ * 세션 쿠키는 노션 틀 안에서도 실려야 해서 SameSite=None 입니다. 그러면 브라우저가
+ * 다른 사이트의 폼 전송에도 쿠키를 실어 보내므로, 쿠키가 막아 주던 CSRF 를 여기서 막습니다.
+ * 노션 틀 안에서 우리 화면이 보내는 요청은 우리 출처라 걸리지 않습니다.
+ */
+export function isCrossSiteWrite(request: Request): boolean {
+  if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return false
+  if (request.headers.get('sec-fetch-site') === 'cross-site') return true
+  const origin = request.headers.get('origin')
+  return origin !== null && origin !== originOf(request.headers)
+}
+
 /** 열린 리다이렉트를 막습니다. / 로 시작하고 // 나 /\ 로 시작하지 않아야 합니다. */
 export function safeNext(value: string | null | undefined): string {
   if (!value) return DEFAULT_NEXT

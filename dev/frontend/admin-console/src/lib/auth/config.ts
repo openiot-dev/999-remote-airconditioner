@@ -51,6 +51,16 @@ export const SESSION_TTL_SECONDS = Number(process.env.SESSION_TTL_SECONDS ?? 8 *
 /** 로그인 후 기본 착지 지점. */
 export const DEFAULT_NEXT = '/admin'
 
+/**
+ * 노션 같은 다른 사이트 안에 끼워 넣어 띄웠을 때(iframe) 로그인은 팝업 창에서 합니다.
+ * 구글 로그인 화면은 남의 화면 안에 들어가기를 거부해서(403) 틀 안에서는 시작할 수 없습니다.
+ * 팝업이 로그인을 마치면 이 주소로 와서 틀에 알리고 스스로 닫힙니다(login/done/page.tsx).
+ */
+export const POPUP_DONE_PATH = '/login/done'
+
+/** 팝업이 틀에게 "로그인 끝났다" 고 알릴 때 쓰는 메시지 이름. */
+export const POPUP_MESSAGE = 'oi-login-done'
+
 export type AuthConfig = {
   clientId: string
   clientSecret: string

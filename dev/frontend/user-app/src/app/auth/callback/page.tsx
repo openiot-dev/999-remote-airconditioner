@@ -12,7 +12,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { readAuthConfig } from '@/lib/auth/config'
-import { completeLogin, LoginError } from '@/lib/auth/session'
+import { completeLogin, handOffToOpener, LoginError } from '@/lib/auth/session'
 
 const MESSAGES: Record<string, string> = {
   config: '로그인 설정이 없습니다. .env.local 을 확인해 주세요.',
@@ -33,6 +33,12 @@ export default function AuthCallbackPage() {
 
     completeLogin(config, window.location.search)
       .then((next) => {
+        // 노션 틀 안에서 연 팝업이면 토큰을 틀에 건네고 닫습니다.
+        if (handOffToOpener()) {
+          window.close()
+          setError('로그인을 마쳤습니다. 이 창을 닫아도 됩니다.')
+          return
+        }
         // replace 라 뒤로 가기를 눌러도 코드가 붙은 주소로 돌아오지 않습니다.
         window.location.replace(next)
       })

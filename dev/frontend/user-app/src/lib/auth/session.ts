@@ -27,6 +27,12 @@ const VERIFIER_KEY = 'oi_pkce_verifier'
 const STATE_KEY = 'oi_pkce_state'
 const NEXT_KEY = 'oi_after_login'
 const REFRESH_KEY = 'oi_refresh'
+const POPUP_KEY = 'oi_popup_login'
+
+/** 노션 틀 안에서 누른 로그인이 여는 팝업의 첫 화면(app/auth/popup/page.tsx). */
+const POPUP_PATH = '/auth/popup'
+/** 팝업이 틀에게 토큰을 건넬 때 쓰는 메시지 이름. */
+const POPUP_MESSAGE = 'oi-login-tokens'
 
 /** 만료 직전에 미리 갱신합니다. 호출 도중에 만료되는 것을 피합니다. */
 const RENEW_MARGIN_SECONDS = 60
@@ -71,6 +77,95 @@ export async function beginLogin(config: AuthConfig, next = '/'): Promise<void> 
   url.searchParams.set('identity_provider', 'Google')
 
   window.location.assign(url.toString())
+}
+
+/**
+ * 노션 같은 다른 사이트 안에 끼워 넣어 띄웠는지(iframe).
+ *
+ * 그렇다면 beginLogin 을 부르지 말고 loginInPopup 을 부릅니다. 구글 로그인 화면은
+ * 남의 화면 안에 들어가기를 거부해서, 틀 안에서 Cognito 로 보내면 구글 403 화면만 뜹니다.
+ */
+export function isEmbedded(): boolean {
+  try {
+    return window.self !== window.top
+  } catch {
+    // 다른 출처의 틀 안이면 window.top 을 읽다가 막힐 수 있습니다. 그것도 끼워 넣어진 것입니다.
+    return true
+  }
+}
+
+export type PopupLoginResult = 'ok' | 'blocked' | 'cancelled'
+
+/**
+ * 팝업 창에서 로그인하고, 받은 토큰을 이 틀에 넣습니다.
+ *
+ * 팝업과 틀은 같은 출처여도 sessionStorage 를 같이 쓰지 않습니다. 브라우저가 저장소를
+ * 맨 바깥 사이트(노션 대 우리 앱)별로 나누기 때문입니다. 그래서 팝업이 로그인을 마치면
+ * 토큰을 postMessage 로 건네고(handOffToOpener), 틀이 자기 저장소에 다시 담습니다.
+ *
+ * 클릭 처리기 안에서 바로 불러야 합니다. 앞에 await 를 두면 브라우저가 팝업을 막습니다.
+ */
+export function loginInPopup(): Promise<PopupLoginResult> {
+  const popup = window.open(POPUP_PATH, 'oi-login', 'popup,width=480,height=680')
+  if (!popup) return Promise.resolve('blocked')
+
+  return new Promise((resolve) => {
+    // 로그인하지 않고 팝업을 닫았을 때 기다림을 끝냅니다.
+    const timer = window.setInterval(() => {
+      if (popup.closed) finish('cancelled')
+    }, 500)
+
+    function onMessage(event: MessageEvent) {
+      // 우리 출처에서, 우리가 연 팝업이 보낸 것만 받습니다.
+      if (event.origin !== window.location.origin || event.source !== popup) return
+
+      const data = event.data as { type?: unknown; idToken?: unknown; refreshToken?: unknown } | null
+      if (data?.type !== POPUP_MESSAGE || typeof data.idToken !== 'string') return
+
+      try {
+        remember(data.idToken, typeof data.refreshToken === 'string' ? data.refreshToken : null)
+        finish('ok')
+      } catch {
+        finish('cancelled')
+      }
+    }
+
+    function finish(result: PopupLoginResult) {
+      window.clearInterval(timer)
+      window.removeEventListener('message', onMessage)
+      resolve(result)
+    }
+
+    window.addEventListener('message', onMessage)
+  })
+}
+
+/** 팝업의 첫 화면이 부릅니다. 콜백이 토큰을 틀에 건네도록 표시해 두고 로그인을 시작합니다. */
+export async function beginPopupLogin(config: AuthConfig): Promise<void> {
+  sessionStorage.setItem(POPUP_KEY, '1')
+  await beginLogin(config, '/')
+}
+
+/**
+ * 콜백 화면이 completeLogin 뒤에 부릅니다. 팝업 로그인이었으면 토큰을 연 틀에 건네고 true 입니다.
+ * 건넨 토큰은 팝업 쪽에서 지웁니다. 같은 토큰이 두 곳에 남아 있을 이유가 없습니다.
+ *
+ * 틀이 사라졌으면(노션 탭을 닫았으면) false 이고, 팝업이 그대로 로그인된 화면으로 갑니다.
+ */
+export function handOffToOpener(): boolean {
+  const wasPopup = sessionStorage.getItem(POPUP_KEY) !== null
+  sessionStorage.removeItem(POPUP_KEY)
+
+  const opener = window.opener as Window | null
+  if (!wasPopup || !opener || !idToken) return false
+
+  // 받는 쪽을 우리 출처로 못 박습니다. 팝업을 연 창이 다른 곳으로 가 있으면 토큰은 버려집니다.
+  opener.postMessage(
+    { type: POPUP_MESSAGE, idToken, refreshToken: sessionStorage.getItem(REFRESH_KEY) },
+    window.location.origin,
+  )
+  forget()
+  return true
 }
 
 export class LoginError extends Error {

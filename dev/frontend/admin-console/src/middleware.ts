@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { ALLOWED_EMAIL_DOMAIN, SESSION_COOKIE, USER_HEADER, readAuthConfig } from '@/lib/auth/config'
+import { isCrossSiteWrite } from '@/lib/auth/request'
 import { readSession } from '@/lib/auth/session'
 
 /**
@@ -16,6 +17,11 @@ export const config = {
 export async function middleware(request: NextRequest) {
   /** 화면은 로그인으로 보내고, /api/ 는 401 JSON 으로 답합니다. */
   const isApi = request.nextUrl.pathname.startsWith('/api/')
+
+  // 세션 쿠키가 SameSite=None 이라 다른 사이트의 쓰기 요청에도 실립니다. 로그인 여부보다 먼저 자릅니다.
+  if (isCrossSiteWrite(request)) {
+    return NextResponse.json({ error: '다른 사이트에서 보낸 요청입니다', code: 'CrossSite' }, { status: 403 })
+  }
 
   const authConfig = readAuthConfig()
 

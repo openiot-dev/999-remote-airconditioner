@@ -16,7 +16,14 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { api, ApiError } from '@/lib/api'
 import { readAuthConfig } from '@/lib/auth/config'
-import { beginLogin, currentClaims, logout, TransientAuthError } from '@/lib/auth/session'
+import {
+  beginLogin,
+  currentClaims,
+  isEmbedded,
+  loginInPopup,
+  logout,
+  TransientAuthError,
+} from '@/lib/auth/session'
 
 type Item = { id: string; title?: string }
 type ItemsResponse = { items?: Item[] }
@@ -113,11 +120,29 @@ export default function Home() {
         <p className="text-sm text-zinc-600 dark:text-zinc-400">사내 계정으로 로그인해 주세요.</p>
         <button
           type="button"
-          onClick={() => void beginLogin(config, '/')}
+          onClick={() => {
+            if (!isEmbedded()) {
+              void beginLogin(config, '/')
+              return
+            }
+            // 노션 틀 안에서는 팝업으로 로그인합니다. 구글이 틀 안에서는 열리지 않습니다.
+            setError(null)
+            void loginInPopup().then(async (result) => {
+              if (result === 'blocked') {
+                setError('브라우저가 팝업을 막았습니다. 팝업을 허용하고 다시 눌러 주세요.')
+                return
+              }
+              if (result === 'ok') {
+                const claims = await currentClaims(config)
+                setEmail(claims?.email ?? null)
+              }
+            })
+          }}
           className="w-full rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
         >
           OpenIoT 계정으로 로그인
         </button>
+        {error !== null && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       </Shell>
     )
   }

@@ -90,11 +90,14 @@ export async function GET(request: Request) {
 
   const response = NextResponse.redirect(new URL(next, origin))
 
+  // 세션과 갱신 토큰은 SameSite=None 입니다. lax 면 노션 틀 안에서 화면을 열 때 브라우저가
+  // 쿠키를 빼고 보내서, 팝업으로 로그인을 마쳐도 틀은 계속 로그인 화면에 머뭅니다.
+  // 대신 다른 사이트의 쓰기 요청은 미들웨어와 로그아웃이 isCrossSiteWrite 로 막습니다.
   response.cookies.set(SESSION_COOKIE, await createSession(email, authConfig.sessionSecret, SESSION_TTL_SECONDS), {
     path: '/',
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
+    sameSite: 'none',
     maxAge: SESSION_TTL_SECONDS,
   })
   response.cookies.set(STATE_COOKIE, '', { path: '/', httpOnly: true, secure: true, sameSite: 'lax', maxAge: 0 })
@@ -106,7 +109,7 @@ export async function GET(request: Request) {
       path: '/',
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'none',
       maxAge: REFRESH_TTL_SECONDS,
     })
   }
